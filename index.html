@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leitor de QRCodes - Kit Magalu</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="dashboard-shell">
+    <section class="hero-panel">
+      <div>
+        <p class="eyebrow">Painel de Conferencia</p>
+        <h1>Dashboard de Leitura de Kits</h1>
+        <p class="hero-copy">Use o scanner USB para validar retirada de Kit e Kit Universidade em tempo real.</p>
+      </div>
+      <div class="hero-badge">Scanner ativo</div>
+    </section>
+
+    <section class="metrics-grid">
+      <article class="metric-card">
+        <span class="metric-label">Total de pessoas</span>
+        <strong class="metric-value" id="totalUsers">0</strong>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">Kits pendentes</span>
+        <strong class="metric-value" id="pendingKits">0</strong>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">Kit Universidade pendente</span>
+        <strong class="metric-value" id="pendingExtraKits">0</strong>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <section class="panel scan-panel">
+        <div class="panel-heading">
+          <h2>Leitura</h2>
+          <p>Aponte o scanner USB para o campo abaixo.</p>
+        </div>
+
+        <label for="qrInput" class="input-label">Codigo lido pelo scanner</label>
+        <input type="text" id="qrInput" placeholder="Aguardando leitura do scanner" readonly />
+
+        <div class="manual-divider">
+          <span>ou</span>
+        </div>
+
+        <label for="idMagaluInput" class="input-label">Buscar por ID Magalu</label>
+        <div class="manual-search-row">
+          <input type="text" id="idMagaluInput" placeholder="Digite o ID Magalu" inputmode="numeric" />
+          <button id="searchByIdBtn" type="button">Verificar</button>
+        </div>
+
+        <div class="actions-row">
+          <button id="resetBtn" type="button">Nova leitura</button>
+        </div>
+
+        <div class="hint-box">
+          O leitor USB funciona como teclado. A leitura agora e capturada automaticamente em qualquer lugar da tela, sem precisar selecionar este campo.
+        </div>
+      </section>
+
+      <section class="panel result-panel">
+        <div class="panel-heading">
+          <h2>Resultado</h2>
+          <p>Status atual da pessoa identificada.</p>
+        </div>
+
+        <div class="identity-card">
+          <div class="identity-name" id="userName">Aguardando leitura</div>
+          <div class="identity-meta" id="userMeta">Nenhum QRCode lido.</div>
+        </div>
+
+        <div class="status-grid">
+          <article class="status-card">
+            <span class="status-title">Kit</span>
+            <strong id="kitMsg" class="status-pill neutral">Aguardando leitura</strong>
+          </article>
+          <article class="status-card">
+            <span class="status-title">Kit Universidade</span>
+            <strong id="kitExtraMsg" class="status-pill neutral">Aguardando leitura</strong>
+          </article>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
