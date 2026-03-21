@@ -34,10 +34,13 @@ app.post('/api/scans', (req, res) => {
   const scannedAt = new Date().toISOString();
   const existingIndex = scannedUsers.findIndex(item => item._id === user._id);
   const existingEntry = existingIndex >= 0 ? scannedUsers[existingIndex] : null;
-  const shouldMarkExtraWithdrawn = user.kitExtra === true || (existingEntry && existingEntry.kitExtra === true);
+  const resolvedKit = (existingEntry && existingEntry.kit === true) || user.kit === true;
+  const resolvedKitExtra = (existingEntry && existingEntry.kitExtra === true) || user.kitExtra === true;
+  const resolvedKitExtraWithdrawn =
+    (existingEntry && existingEntry.kitExtraRetirada === true) || user.kitExtraRetirada === true;
 
-  if (user.kit === true || (existingEntry && existingEntry.kit === true)) {
-    const normalizedEntry = {
+  function buildEntry(overrides = {}, scanCount = ((existingEntry && existingEntry.scanCount) || 0) + 1) {
+    return {
       ...(existingEntry || {}),
       _id: user._id,
       nome: user.nome,
@@ -46,13 +49,35 @@ app.post('/api/scans', (req, res) => {
       regional: user.regional,
       filial: user.filial,
       cargo: user.cargo,
-      kit: true,
-      kitExtra: user.kitExtra,
-      kitExtraRetirada: shouldMarkExtraWithdrawn ? true : user.kitExtraRetirada,
+      kit: resolvedKit,
+      kitExtra: resolvedKitExtra,
+      kitExtraRetirada: resolvedKitExtraWithdrawn,
       rawValue,
       scannedAt,
-      scanCount: ((existingEntry && existingEntry.scanCount) || 0) + 1
+      scanCount,
+      ...overrides
     };
+  }
+
+  if (resolvedKit === true) {
+    if (resolvedKitExtra === true && resolvedKitExtraWithdrawn === false) {
+      const updatedEntry = buildEntry({ kitExtraRetirada: true });
+
+      if (existingEntry) {
+        scannedUsers[existingIndex] = updatedEntry;
+      } else {
+        scannedUsers.push(updatedEntry);
+      }
+
+      writeUpdatesFile(scannedUsers);
+      return res.json({
+        ok: true,
+        reason: 'extra-kit-withdrawn',
+        entry: updatedEntry
+      });
+    }
+
+    const normalizedEntry = buildEntry();
 
     if (existingEntry) {
       scannedUsers[existingIndex] = normalizedEntry;
@@ -66,20 +91,11 @@ app.post('/api/scans', (req, res) => {
     });
   }
 
-  const entry = {
-    _id: user._id,
-    nome: user.nome,
-    id_magalu: user.id_magalu,
-    cpf: user.cpf,
-    regional: user.regional,
-    filial: user.filial,
-    cargo: user.cargo,
+  const shouldWithdrawExtraNow = resolvedKitExtra === true && resolvedKitExtraWithdrawn === false;
+  const entry = buildEntry({
     kit: true,
-    kitExtra: user.kitExtra,
-    kitExtraRetirada: shouldMarkExtraWithdrawn ? true : user.kitExtraRetirada,
-    rawValue,
-    scannedAt
-  };
+    kitExtraRetirada: shouldWithdrawExtraNow ? true : resolvedKitExtraWithdrawn
+  });
 
   if (existingEntry) {
     scannedUsers[existingIndex] = {
@@ -95,7 +111,11 @@ app.post('/api/scans', (req, res) => {
   }
 
   writeUpdatesFile(scannedUsers);
-  return res.json({ ok: true, reason: 'kit-withdrawn', entry });
+  return res.json({
+    ok: true,
+    reason: shouldWithdrawExtraNow ? 'kit-and-extra-withdrawn' : 'kit-withdrawn',
+    entry
+  });
 });
 
 app.listen(PORT, () => {

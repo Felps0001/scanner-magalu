@@ -262,12 +262,39 @@ h1 {
   border-radius: 22px;
   background: #f8fbff;
   border: 1px solid #dce7f5;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .status-title {
   color: var(--muted);
   font-size: 0.95rem;
   font-weight: 700;
+}
+
+.status-card.green {
+  background: var(--success-bg);
+  border-color: rgba(24, 121, 78, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(24, 121, 78, 0.08);
+}
+
+.status-card.green .status-title {
+  color: var(--success-text);
+}
+
+.status-card.red {
+  background: var(--danger-bg);
+  border-color: rgba(192, 52, 43, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(192, 52, 43, 0.06);
+}
+
+.status-card.red .status-title {
+  color: var(--danger-text);
+}
+
+.status-card.neutral {
+  background: #f8fbff;
+  border-color: #dce7f5;
+  box-shadow: none;
 }
 
 .status-pill {

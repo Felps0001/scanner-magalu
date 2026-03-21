@@ -5,6 +5,8 @@ const elements = {
   resetBtn: document.getElementById('resetBtn'),
   userName: document.getElementById('userName'),
   userMeta: document.getElementById('userMeta'),
+  kitCard: document.getElementById('kitCard'),
+  kitExtraCard: document.getElementById('kitExtraCard'),
   kitMsg: document.getElementById('kitMsg'),
   kitExtraMsg: document.getElementById('kitExtraMsg'),
   totalUsers: document.getElementById('totalUsers'),
@@ -39,11 +41,17 @@ function setStatus(target, text, variant) {
   target.className = `status-pill ${variant}`;
 }
 
+function setStatusCard(target, variant) {
+  target.className = `status-card ${variant}`;
+}
+
 function resetDashboard() {
   elements.userName.textContent = 'Aguardando leitura';
   elements.userMeta.textContent = 'Nenhum QRCode lido.';
   setStatus(elements.kitMsg, 'Aguardando leitura', 'neutral');
   setStatus(elements.kitExtraMsg, 'Aguardando leitura', 'neutral');
+  setStatusCard(elements.kitCard, 'neutral');
+  setStatusCard(elements.kitExtraCard, 'neutral');
   elements.qrInput.value = '';
   elements.idMagaluInput.value = '';
   scanBuffer = '';
@@ -101,46 +109,67 @@ function parseScannedValue(rawValue) {
   };
 }
 
-function matchesUser(user, scanData) {
+function hasComparableValue(value) {
+  return value !== undefined && value !== null && String(value).trim() !== '';
+}
 
-  // Compara campos internos do JSON escaneado e do usuário
-  if (user._id === scanData.userId || user.id_magalu === scanData.idMagalu || user.cpf === scanData.cpf) {
+function valuesMatch(left, right) {
+  if (!hasComparableValue(left) || !hasComparableValue(right)) {
+    return false;
+  }
+
+  return String(left).trim() === String(right).trim();
+}
+
+function getUserPayload(user) {
+  if (!user.qrCodePayload) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(user.qrCodePayload);
+    return payload && payload.user ? payload.user : null;
+  } catch {
+    return null;
+  }
+}
+
+function matchesStrongIdentifiers(user, scanData) {
+  if (valuesMatch(user._id, scanData.userId) || valuesMatch(user.id_magalu, scanData.idMagalu)) {
     return true;
   }
 
-  // Se o usuário tem qrCodePayload, tenta comparar campos internos
-  if (user.qrCodePayload) {
-    try {
-      const payload = JSON.parse(user.qrCodePayload);
-      if (payload && payload.user) {
-        if (
-          payload.user.userId === scanData.userId ||
-          payload.user.id_magalu === scanData.idMagalu ||
-          payload.user.cpf === scanData.cpf
-        ) {
-          return true;
-        }
-      }
-    } catch {}
+  const payloadUser = getUserPayload(user);
+  if (!payloadUser) {
+    return false;
   }
 
-  // Se o scan é um JSON, compara campos com o usuário
-  if (scanData.isStructuredPayload) {
-    if (
-      user._id === scanData.userId ||
-      user.id_magalu === scanData.idMagalu ||
-      user.cpf === scanData.cpf
-    ) {
-      return true;
-    }
+  return valuesMatch(payloadUser.userId, scanData.userId) || valuesMatch(payloadUser.id_magalu, scanData.idMagalu);
+}
+
+function matchesCpf(user, scanData) {
+  if (valuesMatch(user.cpf, scanData.cpf)) {
+    return true;
   }
 
-  return false;
+  const payloadUser = getUserPayload(user);
+  return payloadUser ? valuesMatch(payloadUser.cpf, scanData.cpf) : false;
 }
 
 function findUserByScan(rawValue) {
   const scanData = parseScannedValue(rawValue);
-  return usersData.find(user => matchesUser(user, scanData)) || null;
+
+  const strongMatch = usersData.find(user => matchesStrongIdentifiers(user, scanData));
+  if (strongMatch) {
+    return strongMatch;
+  }
+
+  const hasStrongIdentifiers = hasComparableValue(scanData.userId) || hasComparableValue(scanData.idMagalu);
+  if (scanData.isStructuredPayload && hasStrongIdentifiers) {
+    return null;
+  }
+
+  return usersData.find(user => matchesCpf(user, scanData)) || null;
 }
 
 function findUserByIdMagalu(idMagalu) {
@@ -171,28 +200,47 @@ function showStatus(user, scanResult = null) {
     elements.userMeta.textContent = 'Verifique se o QRCode pertence a base carregada.';
     setStatus(elements.kitMsg, 'Nao localizado', 'red');
     setStatus(elements.kitExtraMsg, 'Nao localizado', 'red');
+    setStatusCard(elements.kitCard, 'red');
+    setStatusCard(elements.kitExtraCard, 'red');
     return;
   }
 
   const effectiveUser = scanResult && scanResult.entry ? { ...user, ...scanResult.entry } : user;
+  const kitWithdrawnNow = scanResult && (
+    scanResult.reason === 'kit-withdrawn' ||
+    scanResult.reason === 'kit-and-extra-withdrawn'
+  );
+  const extraWithdrawnNow = scanResult && (
+    scanResult.reason === 'extra-kit-withdrawn' ||
+    scanResult.reason === 'kit-and-extra-withdrawn'
+  );
 
   elements.userName.textContent = effectiveUser.nome;
   elements.userMeta.textContent = `ID Magalu: ${effectiveUser.id_magalu} • Filial: ${effectiveUser.filial} • Regional: ${effectiveUser.regional}`;
 
-  if (scanResult && scanResult.reason === 'kit-withdrawn') {
+  if (kitWithdrawnNow) {
     setStatus(elements.kitMsg, 'Retirada registrada', 'green');
+    setStatusCard(elements.kitCard, 'green');
   } else if (effectiveUser.kit === false) {
     setStatus(elements.kitMsg, 'Disponivel para retirada', 'green');
+    setStatusCard(elements.kitCard, 'green');
   } else {
     setStatus(elements.kitMsg, 'Ja retirado', 'red');
+    setStatusCard(elements.kitCard, 'red');
   }
 
-  if (effectiveUser.kitExtraRetirada === true) {
+  if (extraWithdrawnNow) {
+    setStatus(elements.kitExtraMsg, 'Retirada registrada', 'green');
+    setStatusCard(elements.kitExtraCard, 'green');
+  } else if (effectiveUser.kitExtraRetirada === true) {
     setStatus(elements.kitExtraMsg, 'Ja retirado', 'red');
+    setStatusCard(elements.kitExtraCard, 'red');
   } else if (effectiveUser.kitExtra === true) {
     setStatus(elements.kitExtraMsg, 'Disponivel para retirada', 'green');
+    setStatusCard(elements.kitExtraCard, 'green');
   } else {
     setStatus(elements.kitExtraMsg, 'Nao autorizado para retirada', 'red');
+    setStatusCard(elements.kitExtraCard, 'red');
   }
 }
 
