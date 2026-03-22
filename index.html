@@ -40,7 +40,7 @@
         </div>
 
         <label for="qrInput" class="input-label">Codigo lido pelo scanner</label>
-        <input type="text" id="qrInput" placeholder="Aguardando leitura do scanner" readonly />
+        <textarea id="qrInput" rows="6" placeholder="Aguardando leitura do scanner"></textarea>
 
         <div class="manual-divider">
           <span>ou</span>
@@ -63,6 +63,12 @@
 
         <div class="hint-box" id="loadHint">
           O leitor USB funciona como teclado. A leitura agora e capturada automaticamente em qualquer lugar da tela, sem precisar selecionar este campo.
+        </div>
+
+        <div class="debug-panel">
+          <div class="debug-heading">Debug da leitura</div>
+          <div class="debug-meta" id="scanDebugMeta">Nenhuma leitura capturada.</div>
+          <pre class="debug-output" id="scanDebugOutput">Aguardando leitura do scanner.</pre>
         </div>
       </section>
 

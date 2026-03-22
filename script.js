@@ -15,13 +15,16 @@ const elements = {
   pendingKits: document.getElementById('pendingKits'),
   pendingExtraKits: document.getElementById('pendingExtraKits'),
   baseStatusBadge: document.getElementById('baseStatusBadge'),
-  loadHint: document.getElementById('loadHint')
+  loadHint: document.getElementById('loadHint'),
+  scanDebugMeta: document.getElementById('scanDebugMeta'),
+  scanDebugOutput: document.getElementById('scanDebugOutput')
 };
 
 let usersData = [];
 let scanBuffer = '';
 let usersDataReady = false;
 let usersDataPromise;
+let lastProcessedScan = '';
 
 function setLookupAvailability(isReady) {
   elements.idMagaluInput.disabled = !isReady;
@@ -30,6 +33,35 @@ function setLookupAvailability(isReady) {
 
 function setBaseStatus(text) {
   elements.baseStatusBadge.textContent = text;
+}
+
+function focusScannerField() {
+  if (document.activeElement === elements.idMagaluInput) {
+    return;
+  }
+
+  elements.qrInput.focus({ preventScroll: true });
+}
+
+function updateScannerDebug(rawValue) {
+  const normalizedValue = rawValue || '';
+  const trimmedValue = normalizedValue.trim();
+  const parsed = trimmedValue ? tryParseStructuredPayload(trimmedValue) : null;
+
+  elements.qrInput.value = normalizedValue;
+  elements.scanDebugOutput.textContent = normalizedValue || 'Aguardando leitura do scanner.';
+
+  if (!trimmedValue) {
+    elements.scanDebugMeta.textContent = 'Nenhuma leitura capturada.';
+    return;
+  }
+
+  if (parsed && parsed.user) {
+    elements.scanDebugMeta.textContent = `${trimmedValue.length} caracteres capturados • userId: ${parsed.user.userId} • ID Magalu: ${parsed.user.id_magalu}`;
+    return;
+  }
+
+  elements.scanDebugMeta.textContent = `${trimmedValue.length} caracteres capturados • leitura parcial ou texto simples`;
 }
 
 function applyUsersData(data, sourceLabel) {
@@ -110,9 +142,11 @@ function resetDashboard() {
   setStatus(elements.kitExtraMsg, 'Aguardando leitura', 'neutral');
   setStatusCard(elements.kitCard, 'neutral');
   setStatusCard(elements.kitExtraCard, 'neutral');
-  elements.qrInput.value = '';
   elements.idMagaluInput.value = '';
   scanBuffer = '';
+  lastProcessedScan = '';
+  updateScannerDebug('');
+  focusScannerField();
 }
 
 function tryParseStructuredPayload(value) {
@@ -321,13 +355,31 @@ async function processScannerInput(rawValue) {
   const qrValue = rawValue.trim();
 
   if (!qrValue) {
-    elements.qrInput.value = '';
+    updateScannerDebug('');
     return;
   }
 
-  elements.qrInput.value = qrValue;
+  updateScannerDebug(qrValue);
   const user = findUserByScan(qrValue);
   await processUserLookup(user, qrValue);
+}
+
+async function flushScannerValue(rawValue) {
+  const valueToProcess = (rawValue || '').trim();
+
+  if (!valueToProcess) {
+    scanBuffer = '';
+    updateScannerDebug('');
+    return;
+  }
+
+  if (valueToProcess === lastProcessedScan) {
+    return;
+  }
+
+  lastProcessedScan = valueToProcess;
+  scanBuffer = '';
+  await processScannerInput(valueToProcess);
 }
 
 elements.idMagaluInput.addEventListener('keydown', async event => {
@@ -367,23 +419,41 @@ elements.searchByIdBtn.addEventListener('click', async () => {
   const user = findUserByIdMagalu(idMagalu);
   await processUserLookup(user, `manual:id_magalu:${idMagalu}`);
   elements.idMagaluInput.value = '';
+  focusScannerField();
+});
+
+elements.qrInput.addEventListener('focus', () => {
+  updateScannerDebug(elements.qrInput.value);
+});
+
+elements.qrInput.addEventListener('input', event => {
+  scanBuffer = event.target.value;
+  updateScannerDebug(scanBuffer);
+});
+
+elements.qrInput.addEventListener('keydown', async event => {
+  if (event.key !== 'Enter') {
+    return;
+  }
+
+  event.preventDefault();
+  await flushScannerValue(elements.qrInput.value);
 });
 
 document.addEventListener('keydown', async event => {
-  if (event.target === elements.idMagaluInput) {
+  if (event.target === elements.idMagaluInput || event.target === elements.qrInput) {
     return;
   }
 
   if (event.key === 'Enter') {
-    const valueToProcess = scanBuffer;
-    scanBuffer = '';
-    await processScannerInput(valueToProcess);
+    event.preventDefault();
+    await flushScannerValue(scanBuffer);
     return;
   }
 
   if (event.key === 'Backspace') {
     scanBuffer = scanBuffer.slice(0, -1);
-    elements.qrInput.value = scanBuffer;
+    updateScannerDebug(scanBuffer);
     return;
   }
 
@@ -392,7 +462,7 @@ document.addEventListener('keydown', async event => {
   }
 
   scanBuffer += event.key;
-  elements.qrInput.value = scanBuffer;
+  updateScannerDebug(scanBuffer);
 });
 
 elements.importUsersBtn.addEventListener('click', () => {
@@ -423,3 +493,4 @@ elements.resetBtn.addEventListener('click', resetDashboard);
 setLookupAvailability(false);
 resetDashboard();
 usersDataPromise = loadUsersData();
+window.addEventListener('load', focusScannerField);

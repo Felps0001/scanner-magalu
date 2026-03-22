@@ -148,7 +148,9 @@ h1 {
   font-size: 1rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
-  cursor: default;
+  resize: vertical;
+  min-height: 144px;
+  line-height: 1.45;
 }
 
 #idMagaluInput {
@@ -243,6 +245,41 @@ h1 {
   background: #f6f9fe;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.debug-panel {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 1px solid #dce7f5;
+}
+
+.debug-heading {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.debug-meta {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.debug-output {
+  margin: 12px 0 0;
+  padding: 14px;
+  min-height: 96px;
+  max-height: 240px;
+  overflow: auto;
+  border-radius: 14px;
+  background: #132238;
+  color: #f3f7fc;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .identity-card {
