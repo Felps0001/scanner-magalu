@@ -14,7 +14,7 @@
         <h1>Dashboard de Leitura de Kits</h1>
         <p class="hero-copy">Use o scanner USB para validar retirada de Kit e Kit Universidade em tempo real.</p>
       </div>
-      <div class="hero-badge">Scanner ativo</div>
+      <div class="hero-badge" id="baseStatusBadge">Carregando base</div>
     </section>
 
     <section class="metrics-grid">
@@ -52,11 +52,16 @@
           <button id="searchByIdBtn" type="button">Verificar</button>
         </div>
 
+        <div class="import-row">
+          <button id="importUsersBtn" type="button" class="secondary-btn">Importar Users.json</button>
+          <input type="file" id="importUsersInput" accept=".json,application/json" hidden />
+        </div>
+
         <div class="actions-row">
           <button id="resetBtn" type="button">Nova leitura</button>
         </div>
 
-        <div class="hint-box">
+        <div class="hint-box" id="loadHint">
           O leitor USB funciona como teclado. A leitura agora e capturada automaticamente em qualquer lugar da tela, sem precisar selecionar este campo.
         </div>
       </section>

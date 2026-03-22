@@ -2,6 +2,8 @@ const elements = {
   qrInput: document.getElementById('qrInput'),
   idMagaluInput: document.getElementById('idMagaluInput'),
   searchByIdBtn: document.getElementById('searchByIdBtn'),
+  importUsersBtn: document.getElementById('importUsersBtn'),
+  importUsersInput: document.getElementById('importUsersInput'),
   resetBtn: document.getElementById('resetBtn'),
   userName: document.getElementById('userName'),
   userMeta: document.getElementById('userMeta'),
@@ -11,24 +13,80 @@ const elements = {
   kitExtraMsg: document.getElementById('kitExtraMsg'),
   totalUsers: document.getElementById('totalUsers'),
   pendingKits: document.getElementById('pendingKits'),
-  pendingExtraKits: document.getElementById('pendingExtraKits')
+  pendingExtraKits: document.getElementById('pendingExtraKits'),
+  baseStatusBadge: document.getElementById('baseStatusBadge'),
+  loadHint: document.getElementById('loadHint')
 };
 
 let usersData = [];
 let scanBuffer = '';
+let usersDataReady = false;
+let usersDataPromise;
 
-fetch('Users.json')
-  .then(response => response.json())
-  .then(data => {
-    usersData = data;
-    renderMetrics();
-  })
-  .catch(() => {
-    elements.userName.textContent = 'Erro ao carregar base';
-    elements.userMeta.textContent = 'Nao foi possivel abrir o arquivo Users.json.';
-    setStatus(elements.kitMsg, 'Erro na leitura', 'red');
-    setStatus(elements.kitExtraMsg, 'Erro na leitura', 'red');
-  });
+function setLookupAvailability(isReady) {
+  elements.idMagaluInput.disabled = !isReady;
+  elements.searchByIdBtn.disabled = !isReady;
+}
+
+function setBaseStatus(text) {
+  elements.baseStatusBadge.textContent = text;
+}
+
+function applyUsersData(data, sourceLabel) {
+  if (!Array.isArray(data)) {
+    throw new Error('Formato invalido para Users.json');
+  }
+
+  usersData = data;
+  usersDataReady = true;
+  renderMetrics();
+  setLookupAvailability(true);
+  setBaseStatus(`Base carregada: ${sourceLabel}`);
+  elements.loadHint.textContent = 'O leitor USB funciona como teclado. A leitura e capturada automaticamente em qualquer lugar da tela. A base esta pronta para consulta.';
+}
+
+function showLoadError() {
+  usersDataReady = false;
+  setLookupAvailability(false);
+  setBaseStatus('Base nao carregada');
+  elements.userName.textContent = 'Base nao carregada';
+  elements.userMeta.textContent = 'Importe o Users.json ou execute node server.js antes de consultar.';
+  setStatus(elements.kitMsg, 'Aguardando base', 'red');
+  setStatus(elements.kitExtraMsg, 'Aguardando base', 'red');
+  setStatusCard(elements.kitCard, 'red');
+  setStatusCard(elements.kitExtraCard, 'red');
+  elements.loadHint.textContent = 'Se a pagina foi aberta direto do arquivo, clique em Importar Users.json. Se estiver usando servidor local, execute node server.js e abra http://localhost:3000.';
+}
+
+async function loadUsersData() {
+  setBaseStatus('Carregando base');
+
+  try {
+    const response = await fetch('Users.json', { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`Falha HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    applyUsersData(data, 'Users.json');
+    return true;
+  } catch {
+    showLoadError();
+    return false;
+  }
+}
+
+async function ensureUsersLoaded() {
+  if (usersDataReady) {
+    return true;
+  }
+
+  if (usersDataPromise) {
+    await usersDataPromise;
+  }
+
+  return usersDataReady;
+}
 
 function renderMetrics() {
   elements.totalUsers.textContent = String(usersData.length);
@@ -255,6 +313,11 @@ async function processUserLookup(user, rawValue) {
 }
 
 async function processScannerInput(rawValue) {
+  const ready = await ensureUsersLoaded();
+  if (!ready) {
+    return;
+  }
+
   const qrValue = rawValue.trim();
 
   if (!qrValue) {
@@ -272,6 +335,11 @@ elements.idMagaluInput.addEventListener('keydown', async event => {
     return;
   }
 
+  const ready = await ensureUsersLoaded();
+  if (!ready) {
+    return;
+  }
+
   const idMagalu = event.target.value.trim();
 
   if (!idMagalu) {
@@ -284,6 +352,11 @@ elements.idMagaluInput.addEventListener('keydown', async event => {
 });
 
 elements.searchByIdBtn.addEventListener('click', async () => {
+  const ready = await ensureUsersLoaded();
+  if (!ready) {
+    return;
+  }
+
   const idMagalu = elements.idMagaluInput.value.trim();
 
   if (!idMagalu) {
@@ -322,6 +395,31 @@ document.addEventListener('keydown', async event => {
   elements.qrInput.value = scanBuffer;
 });
 
+elements.importUsersBtn.addEventListener('click', () => {
+  elements.importUsersInput.click();
+});
+
+elements.importUsersInput.addEventListener('change', async event => {
+  const [file] = event.target.files || [];
+  if (!file) {
+    return;
+  }
+
+  try {
+    const content = await file.text();
+    const data = JSON.parse(content);
+    applyUsersData(data, file.name);
+    resetDashboard();
+  } catch {
+    showLoadError();
+    elements.userMeta.textContent = 'O arquivo selecionado nao e um JSON valido da base de usuarios.';
+  } finally {
+    event.target.value = '';
+  }
+});
+
 elements.resetBtn.addEventListener('click', resetDashboard);
 
+setLookupAvailability(false);
 resetDashboard();
+usersDataPromise = loadUsersData();
