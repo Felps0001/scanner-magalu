@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "_id": "69bd992c9b8455a222c0b153",
+    "nome": "Luis Fellipe Fontes",
+    "id_magalu": "0002",
+    "cpf": "000.000.000-00",
+    "regional": "GRF",
+    "filial": "",
+    "cargo": "Head de Desenvolvimento GRIFA",
+    "kit": true,
+    "kitExtra": false,
+    "kitExtraRetirada": false,
+    "rawValue": "{\"type\":\"magalu-user\",\"version\":1,\"generatedAt\":\"2026-03-20T19:28:13.449Z\",\"path\":\"/perfil/\",\"user\":{\"userId\":\"69bd992c9b8455a222c0b153\",\"id_magalu\":\"0002\",\"nome\":\"Luis Fellipe Fontes\",\"cpf\":\"000.000.000-00\",\"regional\":\"GRF\",\"filial\":\"\",\"cargo\":\"Head de Desenvolvimento GRIFA\",\"kit\":false,\"kitExtra\":false,\"kitExtraRetirada\":false}}",
+    "scannedAt": "2026-03-22T18:08:47.549Z",
+    "scanCount": 2
+  }
+]

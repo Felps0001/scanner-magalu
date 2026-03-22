@@ -25,6 +25,7 @@ let scanBuffer = '';
 let usersDataReady = false;
 let usersDataPromise;
 let lastProcessedScan = '';
+let scanBufferTimeout = null;
 
 function setLookupAvailability(isReady) {
   elements.idMagaluInput.disabled = !isReady;
@@ -35,33 +36,17 @@ function setBaseStatus(text) {
   elements.baseStatusBadge.textContent = text;
 }
 
-function focusScannerField() {
-  if (document.activeElement === elements.idMagaluInput) {
-    return;
-  }
-
-  elements.qrInput.focus({ preventScroll: true });
-}
-
 function updateScannerDebug(rawValue) {
   const normalizedValue = rawValue || '';
-  const trimmedValue = normalizedValue.trim();
-  const parsed = trimmedValue ? tryParseStructuredPayload(trimmedValue) : null;
+  const charCount = normalizedValue.length;
 
-  elements.qrInput.value = normalizedValue;
-  elements.scanDebugOutput.textContent = normalizedValue || 'Aguardando leitura do scanner.';
+  elements.scanDebugMeta.textContent = charCount
+    ? `Leitura capturada com ${charCount} caracteres.`
+    : 'Nenhuma leitura capturada.';
 
-  if (!trimmedValue) {
-    elements.scanDebugMeta.textContent = 'Nenhuma leitura capturada.';
-    return;
-  }
-
-  if (parsed && parsed.user) {
-    elements.scanDebugMeta.textContent = `${trimmedValue.length} caracteres capturados • userId: ${parsed.user.userId} • ID Magalu: ${parsed.user.id_magalu}`;
-    return;
-  }
-
-  elements.scanDebugMeta.textContent = `${trimmedValue.length} caracteres capturados • leitura parcial ou texto simples`;
+  elements.scanDebugOutput.textContent = charCount
+    ? normalizedValue
+    : 'Aguardando leitura do scanner.';
 }
 
 function applyUsersData(data, sourceLabel) {
@@ -74,7 +59,15 @@ function applyUsersData(data, sourceLabel) {
   renderMetrics();
   setLookupAvailability(true);
   setBaseStatus(`Base carregada: ${sourceLabel}`);
-  elements.loadHint.textContent = 'O leitor USB funciona como teclado. A leitura e capturada automaticamente em qualquer lugar da tela. A base esta pronta para consulta.';
+  elements.loadHint.textContent = `${usersData.length} usuarios carregados da base atual.`;
+}
+
+function focusScannerField() {
+  if (document.activeElement === elements.idMagaluInput) {
+    return;
+  }
+
+  elements.qrInput.focus({ preventScroll: true });
 }
 
 function showLoadError() {
@@ -145,8 +138,18 @@ function resetDashboard() {
   elements.idMagaluInput.value = '';
   scanBuffer = '';
   lastProcessedScan = '';
+  clearTimeout(scanBufferTimeout);
   updateScannerDebug('');
   focusScannerField();
+}
+
+function scheduleScanFlush(value, delay = 100) {
+  scanBuffer = value;
+  updateScannerDebug(scanBuffer);
+  clearTimeout(scanBufferTimeout);
+  scanBufferTimeout = setTimeout(() => {
+    flushScannerValue(scanBuffer);
+  }, delay);
 }
 
 function tryParseStructuredPayload(value) {
@@ -366,6 +369,7 @@ async function processScannerInput(rawValue) {
 
 async function flushScannerValue(rawValue) {
   const valueToProcess = (rawValue || '').trim();
+  clearTimeout(scanBufferTimeout);
 
   if (!valueToProcess) {
     scanBuffer = '';
@@ -427,8 +431,14 @@ elements.qrInput.addEventListener('focus', () => {
 });
 
 elements.qrInput.addEventListener('input', event => {
-  scanBuffer = event.target.value;
-  updateScannerDebug(scanBuffer);
+  const value = event.target.value;
+
+  if (event.inputType === 'insertFromPaste') {
+    flushScannerValue(value);
+    return;
+  }
+
+  scheduleScanFlush(value);
 });
 
 elements.qrInput.addEventListener('keydown', async event => {
@@ -437,6 +447,7 @@ elements.qrInput.addEventListener('keydown', async event => {
   }
 
   event.preventDefault();
+  clearTimeout(scanBufferTimeout);
   await flushScannerValue(elements.qrInput.value);
 });
 
@@ -447,6 +458,7 @@ document.addEventListener('keydown', async event => {
 
   if (event.key === 'Enter') {
     event.preventDefault();
+    clearTimeout(scanBufferTimeout);
     await flushScannerValue(scanBuffer);
     return;
   }
@@ -462,7 +474,7 @@ document.addEventListener('keydown', async event => {
   }
 
   scanBuffer += event.key;
-  updateScannerDebug(scanBuffer);
+  scheduleScanFlush(scanBuffer);
 });
 
 elements.importUsersBtn.addEventListener('click', () => {
