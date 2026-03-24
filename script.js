@@ -17,7 +17,20 @@ const elements = {
   baseStatusBadge: document.getElementById('baseStatusBadge'),
   loadHint: document.getElementById('loadHint'),
   scanDebugMeta: document.getElementById('scanDebugMeta'),
-  scanDebugOutput: document.getElementById('scanDebugOutput')
+  scanDebugOutput: document.getElementById('scanDebugOutput'),
+  confirmModalOverlay: document.getElementById('confirmModalOverlay'),
+  confirmModalCloseBtn: document.getElementById('confirmModalCloseBtn'),
+  confirmCancelBtn: document.getElementById('confirmCancelBtn'),
+  confirmApproveBtn: document.getElementById('confirmApproveBtn'),
+  confirmUserName: document.getElementById('confirmUserName'),
+  confirmUserMeta: document.getElementById('confirmUserMeta'),
+  confirmUserIdMagalu: document.getElementById('confirmUserIdMagalu'),
+  confirmUserCpf: document.getElementById('confirmUserCpf'),
+  confirmUserFilial: document.getElementById('confirmUserFilial'),
+  confirmUserRegional: document.getElementById('confirmUserRegional'),
+  confirmUserCargo: document.getElementById('confirmUserCargo'),
+  confirmKitStatus: document.getElementById('confirmKitStatus'),
+  confirmKitExtraStatus: document.getElementById('confirmKitExtraStatus')
 };
 
 let usersData = [];
@@ -26,6 +39,7 @@ let usersDataReady = false;
 let usersDataPromise;
 let lastProcessedScan = '';
 let scanBufferTimeout = null;
+let pendingManualLookup = null;
 
 function setLookupAvailability(isReady) {
   elements.idMagaluInput.disabled = !isReady;
@@ -40,6 +54,8 @@ function updateScannerDebug(rawValue) {
   const normalizedValue = rawValue || '';
   const charCount = normalizedValue.length;
 
+  elements.qrInput.value = normalizedValue;
+
   elements.scanDebugMeta.textContent = charCount
     ? `Leitura capturada com ${charCount} caracteres.`
     : 'Nenhuma leitura capturada.';
@@ -47,6 +63,10 @@ function updateScannerDebug(rawValue) {
   elements.scanDebugOutput.textContent = charCount
     ? normalizedValue
     : 'Aguardando leitura do scanner.';
+}
+
+function clearScannerInputField() {
+  elements.qrInput.value = '';
 }
 
 function applyUsersData(data, sourceLabel) {
@@ -124,11 +144,73 @@ function setStatus(target, text, variant) {
   target.className = `status-pill ${variant}`;
 }
 
+function formatValue(value, fallback = '-') {
+  return hasComparableValue(value) ? String(value).trim() : fallback;
+}
+
+function getKitStatusSummary(user) {
+  return user.kit === false
+    ? { text: 'Disponivel para retirada', variant: 'green' }
+    : { text: 'Ja retirado', variant: 'red' };
+}
+
+function getKitExtraStatusSummary(user) {
+  if (user.kitExtraRetirada === true) {
+    return { text: 'Ja retirado', variant: 'red' };
+  }
+
+  if (user.kitExtra === true) {
+    return { text: 'Disponivel para retirada', variant: 'green' };
+  }
+
+  return { text: 'Nao autorizado para retirada', variant: 'red' };
+}
+
+function populateConfirmModal(user) {
+  elements.confirmUserName.textContent = user.nome;
+  elements.confirmUserMeta.textContent = `${formatValue(user.cargo)} • Filial ${formatValue(user.filial)} • Regional ${formatValue(user.regional)}`;
+  elements.confirmUserIdMagalu.textContent = formatValue(user.id_magalu);
+  elements.confirmUserCpf.textContent = formatValue(user.cpf);
+  elements.confirmUserFilial.textContent = formatValue(user.filial);
+  elements.confirmUserRegional.textContent = formatValue(user.regional);
+  elements.confirmUserCargo.textContent = formatValue(user.cargo);
+
+  const kitStatus = getKitStatusSummary(user);
+  const extraStatus = getKitExtraStatusSummary(user);
+  setStatus(elements.confirmKitStatus, kitStatus.text, kitStatus.variant);
+  setStatus(elements.confirmKitExtraStatus, extraStatus.text, extraStatus.variant);
+}
+
+function openConfirmModal(user, rawValue) {
+  pendingManualLookup = { user, rawValue };
+  populateConfirmModal(user);
+  elements.confirmModalOverlay.classList.remove('hidden');
+  elements.confirmModalOverlay.setAttribute('aria-hidden', 'false');
+  elements.confirmApproveBtn.focus();
+}
+
+function closeConfirmModal(options = {}) {
+  const { resetPending = true, refocusManualInput = true } = options;
+
+  elements.confirmModalOverlay.classList.add('hidden');
+  elements.confirmModalOverlay.setAttribute('aria-hidden', 'true');
+
+  if (resetPending) {
+    pendingManualLookup = null;
+  }
+
+  if (refocusManualInput) {
+    elements.idMagaluInput.focus();
+    elements.idMagaluInput.select();
+  }
+}
+
 function setStatusCard(target, variant) {
   target.className = `status-card ${variant}`;
 }
 
 function resetDashboard() {
+  closeConfirmModal({ resetPending: true, refocusManualInput: false });
   elements.userName.textContent = 'Aguardando leitura';
   elements.userMeta.textContent = 'Nenhum QRCode lido.';
   setStatus(elements.kitMsg, 'Aguardando leitura', 'neutral');
@@ -352,6 +434,7 @@ async function processUserLookup(user, rawValue) {
 async function processScannerInput(rawValue) {
   const ready = await ensureUsersLoaded();
   if (!ready) {
+    clearScannerInputField();
     return;
   }
 
@@ -359,12 +442,26 @@ async function processScannerInput(rawValue) {
 
   if (!qrValue) {
     updateScannerDebug('');
+    clearScannerInputField();
     return;
   }
 
   updateScannerDebug(qrValue);
   const user = findUserByScan(qrValue);
   await processUserLookup(user, qrValue);
+  clearScannerInputField();
+}
+
+function requestManualLookupConfirmation(idMagalu) {
+  const user = findUserByIdMagalu(idMagalu);
+
+  if (!user) {
+    showStatus(null);
+    return false;
+  }
+
+  openConfirmModal(user, `manual:id_magalu:${idMagalu}`);
+  return true;
 }
 
 async function flushScannerValue(rawValue) {
@@ -374,10 +471,12 @@ async function flushScannerValue(rawValue) {
   if (!valueToProcess) {
     scanBuffer = '';
     updateScannerDebug('');
+    clearScannerInputField();
     return;
   }
 
   if (valueToProcess === lastProcessedScan) {
+    clearScannerInputField();
     return;
   }
 
@@ -402,8 +501,11 @@ elements.idMagaluInput.addEventListener('keydown', async event => {
     return;
   }
 
-  const user = findUserByIdMagalu(idMagalu);
-  await processUserLookup(user, `manual:id_magalu:${idMagalu}`);
+  const opened = requestManualLookupConfirmation(idMagalu);
+  if (opened) {
+    return;
+  }
+
   event.target.value = '';
 });
 
@@ -420,39 +522,73 @@ elements.searchByIdBtn.addEventListener('click', async () => {
     return;
   }
 
-  const user = findUserByIdMagalu(idMagalu);
-  await processUserLookup(user, `manual:id_magalu:${idMagalu}`);
+  const opened = requestManualLookupConfirmation(idMagalu);
+  if (!opened) {
+    elements.idMagaluInput.value = '';
+    focusScannerField();
+  }
+});
+
+elements.confirmModalCloseBtn.addEventListener('click', () => {
+  closeConfirmModal();
+});
+
+elements.confirmCancelBtn.addEventListener('click', () => {
+  closeConfirmModal();
+});
+
+elements.confirmApproveBtn.addEventListener('click', async () => {
+  if (!pendingManualLookup) {
+    closeConfirmModal();
+    return;
+  }
+
+  const { user, rawValue } = pendingManualLookup;
+  closeConfirmModal({ resetPending: false, refocusManualInput: false });
+  await processUserLookup(user, rawValue);
+  pendingManualLookup = null;
   elements.idMagaluInput.value = '';
   focusScannerField();
+});
+
+elements.confirmModalOverlay.addEventListener('click', event => {
+  if (event.target === elements.confirmModalOverlay) {
+    closeConfirmModal();
+  }
 });
 
 elements.qrInput.addEventListener('focus', () => {
   updateScannerDebug(elements.qrInput.value);
 });
 
-elements.qrInput.addEventListener('input', event => {
-  const value = event.target.value;
+elements.qrInput.addEventListener('paste', async event => {
+  const pastedText = event.clipboardData ? event.clipboardData.getData('text') : '';
 
-  if (event.inputType === 'insertFromPaste') {
-    flushScannerValue(value);
-    return;
-  }
-
-  scheduleScanFlush(value);
-});
-
-elements.qrInput.addEventListener('keydown', async event => {
-  if (event.key !== 'Enter') {
+  if (!pastedText) {
     return;
   }
 
   event.preventDefault();
   clearTimeout(scanBufferTimeout);
-  await flushScannerValue(elements.qrInput.value);
+  await flushScannerValue(pastedText);
 });
 
 document.addEventListener('keydown', async event => {
-  if (event.target === elements.idMagaluInput || event.target === elements.qrInput) {
+  if (!elements.confirmModalOverlay.classList.contains('hidden')) {
+    if (event.key === 'Escape') {
+      closeConfirmModal();
+      return;
+    }
+
+    if (event.key === 'Enter' && event.target !== elements.idMagaluInput) {
+      event.preventDefault();
+      elements.confirmApproveBtn.click();
+    }
+
+    return;
+  }
+
+  if (event.target === elements.idMagaluInput) {
     return;
   }
 

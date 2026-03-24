@@ -40,7 +40,7 @@
         </div>
 
         <label for="qrInput" class="input-label">Codigo lido pelo scanner</label>
-        <textarea id="qrInput" rows="6" placeholder="Aguardando leitura do scanner"></textarea>
+        <textarea id="qrInput" rows="6" placeholder="Aguardando leitura do scanner" readonly></textarea>
 
         <div class="manual-divider">
           <span>ou</span>
@@ -96,6 +96,60 @@
       </section>
     </section>
   </main>
+
+  <div class="modal-overlay hidden" id="confirmModalOverlay" aria-hidden="true">
+    <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <div class="confirm-modal-header">
+        <div>
+          <p class="confirm-modal-eyebrow">Confirmacao manual</p>
+          <h2 id="confirmModalTitle">Confirmar retirada</h2>
+        </div>
+        <button type="button" class="modal-close-btn" id="confirmModalCloseBtn" aria-label="Fechar popup">×</button>
+      </div>
+
+      <p class="confirm-modal-copy">Confira o cadastro localizado pelo ID Magalu antes de registrar a retirada.</p>
+
+      <div class="confirm-record-card">
+        <strong class="confirm-record-name" id="confirmUserName">Aguardando selecao</strong>
+        <div class="confirm-record-meta" id="confirmUserMeta">Nenhum registro carregado.</div>
+        <div class="confirm-record-grid">
+          <div class="confirm-record-item">
+            <span>ID Magalu</span>
+            <strong id="confirmUserIdMagalu">-</strong>
+          </div>
+          <div class="confirm-record-item">
+            <span>CPF</span>
+            <strong id="confirmUserCpf">-</strong>
+          </div>
+          <div class="confirm-record-item">
+            <span>Filial</span>
+            <strong id="confirmUserFilial">-</strong>
+          </div>
+          <div class="confirm-record-item">
+            <span>Regional</span>
+            <strong id="confirmUserRegional">-</strong>
+          </div>
+          <div class="confirm-record-item confirm-record-item-wide">
+            <span>Cargo</span>
+            <strong id="confirmUserCargo">-</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="confirm-status-preview">
+        <span class="confirm-status-label">Kit</span>
+        <strong class="status-pill neutral" id="confirmKitStatus">Aguardando</strong>
+        <span class="confirm-status-label">Kit Universidade</span>
+        <strong class="status-pill neutral" id="confirmKitExtraStatus">Aguardando</strong>
+      </div>
+
+      <div class="confirm-modal-actions">
+        <button type="button" class="secondary-btn modal-secondary-btn" id="confirmCancelBtn">Cancelar</button>
+        <button type="button" id="confirmApproveBtn">Confirmar retirada</button>
+      </div>
+    </section>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
