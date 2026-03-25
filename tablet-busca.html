@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Buscar ID Magalu - Tablet</title>
+  <link rel="stylesheet" href="tablet-busca.css">
+</head>
+<body>
+  <main class="lookup-shell">
+    <section class="lookup-hero">
+      <div>
+        <p class="lookup-eyebrow">Modo tablet</p>
+        <h1>Buscar por nome</h1>
+        <p class="lookup-copy">Digite o nome da pessoa para localizar rapidamente o ID Magalu no tablet.</p>
+      </div>
+
+      <div class="lookup-hero-actions">
+        <span class="lookup-badge" id="baseStatus">Carregando base</span>
+        <a href="tablet.html" class="lookup-link">Voltar para scanner</a>
+      </div>
+    </section>
+
+    <section class="lookup-card">
+      <label class="lookup-label" for="nameSearchInput">Nome da pessoa</label>
+      <input id="nameSearchInput" type="search" placeholder="Digite nome, sobrenome ou parte do nome" autocomplete="off" spellcheck="false">
+
+      <div class="lookup-toolbar">
+        <p class="lookup-status" id="lookupStatus">Carregando base de usuários...</p>
+        <button type="button" id="clearSearchBtn" class="secondary-btn" disabled>Limpar</button>
+      </div>
+
+      <div class="lookup-empty" id="emptyState">
+        Digite pelo menos 2 letras para iniciar a busca.
+      </div>
+
+      <section class="results-list hidden" id="resultsList" aria-live="polite"></section>
+    </section>
+  </main>
+
+  <script src="tablet-busca.js"></script>
+</body>
+</html>

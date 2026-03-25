@@ -35,55 +35,12 @@ body {
   margin: 32px auto;
 }
 
-.hero-panel,
 .panel,
 .metric-card {
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(10px);
   border: 1px solid var(--panel-border);
   box-shadow: var(--shadow);
-}
-
-.hero-panel {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  border-radius: 28px;
-  padding: 28px;
-  margin-bottom: 24px;
-}
-
-.eyebrow {
-  margin: 0 0 8px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-h1 {
-  margin: 0;
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1.05;
-}
-
-.hero-copy {
-  max-width: 620px;
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 1rem;
-  line-height: 1.6;
-}
-
-.hero-badge {
-  padding: 12px 18px;
-  border-radius: 999px;
-  background: #e9f2ff;
-  color: var(--accent);
-  font-weight: 700;
-  white-space: nowrap;
 }
 
 .metrics-grid {
@@ -245,41 +202,6 @@ h1 {
   background: #f6f9fe;
   color: var(--muted);
   line-height: 1.55;
-}
-
-.debug-panel {
-  margin-top: 16px;
-  padding: 16px 18px;
-  border-radius: 18px;
-  background: #f8fbff;
-  border: 1px solid #dce7f5;
-}
-
-.debug-heading {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--text);
-}
-
-.debug-meta {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
-.debug-output {
-  margin: 12px 0 0;
-  padding: 14px;
-  min-height: 96px;
-  max-height: 240px;
-  overflow: auto;
-  border-radius: 14px;
-  background: #132238;
-  color: #f3f7fc;
-  font-size: 0.88rem;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
 .identity-card {
@@ -547,10 +469,6 @@ h1 {
 
   .manual-search-row {
     grid-template-columns: 1fr;
-  }
-
-  .hero-panel {
-    flex-direction: column;
   }
 
   .confirm-record-grid,

@@ -14,10 +14,7 @@ const elements = {
   totalUsers: document.getElementById('totalUsers'),
   pendingKits: document.getElementById('pendingKits'),
   pendingExtraKits: document.getElementById('pendingExtraKits'),
-  baseStatusBadge: document.getElementById('baseStatusBadge'),
   loadHint: document.getElementById('loadHint'),
-  scanDebugMeta: document.getElementById('scanDebugMeta'),
-  scanDebugOutput: document.getElementById('scanDebugOutput'),
   confirmModalOverlay: document.getElementById('confirmModalOverlay'),
   confirmModalCloseBtn: document.getElementById('confirmModalCloseBtn'),
   confirmCancelBtn: document.getElementById('confirmCancelBtn'),
@@ -47,22 +44,15 @@ function setLookupAvailability(isReady) {
 }
 
 function setBaseStatus(text) {
-  elements.baseStatusBadge.textContent = text;
+  if (elements.baseStatusBadge) {
+    elements.baseStatusBadge.textContent = text;
+  }
 }
 
 function updateScannerDebug(rawValue) {
   const normalizedValue = rawValue || '';
-  const charCount = normalizedValue.length;
 
   elements.qrInput.value = normalizedValue;
-
-  elements.scanDebugMeta.textContent = charCount
-    ? `Leitura capturada com ${charCount} caracteres.`
-    : 'Nenhuma leitura capturada.';
-
-  elements.scanDebugOutput.textContent = charCount
-    ? normalizedValue
-    : 'Aguardando leitura do scanner.';
 }
 
 function clearScannerInputField() {
@@ -354,6 +344,21 @@ function findUserByIdMagalu(idMagalu) {
   return usersData.find(user => String(user.id_magalu).trim() === normalizedId) || null;
 }
 
+function buildPersistUserPayload(user) {
+  return {
+    _id: user._id,
+    nome: user.nome,
+    id_magalu: user.id_magalu,
+    cpf: user.cpf,
+    regional: user.regional,
+    filial: user.filial,
+    cargo: user.cargo,
+    kit: user.kit,
+    kitExtra: user.kitExtra,
+    kitExtraRetirada: user.kitExtraRetirada
+  };
+}
+
 async function persistScan(user, rawValue) {
   try {
     const response = await fetch('/api/scans', {
@@ -361,7 +366,7 @@ async function persistScan(user, rawValue) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ user, rawValue })
+      body: JSON.stringify({ user: buildPersistUserPayload(user), rawValue })
     });
 
     return await response.json();

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Modo Tablet - Scanner Magalu</title>
+  <link rel="stylesheet" href="tablet.css">
+</head>
+<body>
+  <main class="tablet-shell">
+    <section class="tablet-hero">
+      <div>
+        <p class="tablet-eyebrow">Modo tablet</p>
+        <h1>Escaneie e dê baixa na hora</h1>
+        <p class="tablet-copy">Abra a câmera, aponte para o QRCode e confirme a retirada no modal antes de registrar a baixa.</p>
+      </div>
+      <div class="tablet-hero-actions">
+        <span class="tablet-badge" id="baseStatus">Carregando base</span>
+        <a href="tablet-busca.html" class="tablet-hero-link">Buscar ID Magalu</a>
+      </div>
+    </section>
+
+    <section class="tablet-layout">
+      <section class="tablet-card tablet-camera-card">
+        <div class="tablet-card-header">
+          <div>
+            <h2>Câmera</h2>
+            <p>Use a câmera traseira do tablet para leitura contínua.</p>
+          </div>
+        </div>
+
+        <div class="camera-stage">
+          <div id="reader" class="reader-shell"></div>
+          <div class="camera-frame" aria-hidden="true"></div>
+        </div>
+
+        <p class="camera-status" id="cameraStatus">Toque em Abrir câmera para começar.</p>
+
+        <div class="tablet-actions">
+          <button type="button" id="startScannerBtn">Abrir câmera</button>
+          <button type="button" id="stopScannerBtn" class="secondary-btn" disabled>Parar câmera</button>
+        </div>
+
+        <a href="#resultSection" class="tablet-anchor-link" id="resultAnchorLink">Ver resultado</a>
+
+        <label class="tablet-label" for="cameraSelect">Câmera</label>
+        <select id="cameraSelect" disabled>
+          <option value="">Selecione após liberar a câmera</option>
+        </select>
+
+        <div class="divider"><span>ou</span></div>
+
+        <label class="tablet-label" for="imageScannerInput">Ler por foto</label>
+        <input id="imageScannerInput" type="file" accept="image/*" capture="environment">
+
+        <div class="tablet-hint" id="tabletHint">
+          Se a câmera não abrir, confirme a permissão do navegador e use HTTPS ou localhost.
+        </div>
+      </section>
+
+      <section class="tablet-card tablet-result-card" id="resultSection">
+        <div class="tablet-card-header">
+          <div>
+            <h2>Resultado</h2>
+            <p>Última leitura processada no tablet.</p>
+          </div>
+        </div>
+
+        <div class="result-banner neutral" id="resultBanner">
+          <div class="result-banner-title" id="resultTitle">Aguardando leitura</div>
+          <div class="result-banner-meta" id="resultMeta">Nenhum QRCode foi lido ainda.</div>
+        </div>
+
+        <div class="tablet-status-grid">
+          <article class="tablet-status-card neutral" id="kitCard">
+            <span class="tablet-status-title">Kit</span>
+            <strong class="tablet-status-pill neutral" id="kitMsg">Aguardando leitura</strong>
+          </article>
+          <article class="tablet-status-card neutral" id="kitExtraCard">
+            <span class="tablet-status-title">Kit Universidade</span>
+            <strong class="tablet-status-pill neutral" id="kitExtraMsg">Aguardando leitura</strong>
+          </article>
+        </div>
+
+        <div class="scan-footnote" id="scanFootnote">A câmera pode continuar aberta para a próxima leitura.</div>
+      </section>
+    </section>
+  </main>
+
+  <div class="tablet-modal-overlay hidden" id="confirmModalOverlay" aria-hidden="true">
+    <section class="tablet-modal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <div class="tablet-modal-header">
+        <div>
+          <p class="tablet-modal-eyebrow">Confirmacao</p>
+          <h2 id="confirmModalTitle">Confirmar retirada</h2>
+        </div>
+        <button type="button" class="tablet-modal-close" id="confirmModalCloseBtn" aria-label="Fechar modal">×</button>
+      </div>
+
+      <p class="tablet-modal-copy">Confira os dados localizados pelo QRCode antes de registrar a baixa no sistema.</p>
+
+      <div class="tablet-modal-card">
+        <strong class="tablet-modal-name" id="confirmUserName">Aguardando leitura</strong>
+        <div class="tablet-modal-meta" id="confirmUserMeta">Nenhum registro carregado.</div>
+
+        <div class="tablet-modal-grid">
+          <div class="tablet-modal-item">
+            <span>ID Magalu</span>
+            <strong id="confirmUserIdMagalu">-</strong>
+          </div>
+          <div class="tablet-modal-item">
+            <span>CPF</span>
+            <strong id="confirmUserCpf">-</strong>
+          </div>
+          <div class="tablet-modal-item">
+            <span>Filial</span>
+            <strong id="confirmUserFilial">-</strong>
+          </div>
+          <div class="tablet-modal-item">
+            <span>Regional</span>
+            <strong id="confirmUserRegional">-</strong>
+          </div>
+          <div class="tablet-modal-item tablet-modal-item-wide">
+            <span>Cargo</span>
+            <strong id="confirmUserCargo">-</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="tablet-modal-status-grid">
+        <article class="tablet-modal-status-card">
+          <span>Kit</span>
+          <strong class="tablet-status-pill neutral" id="confirmKitStatus">Aguardando</strong>
+        </article>
+        <article class="tablet-modal-status-card">
+          <span>Kit Universidade</span>
+          <strong class="tablet-status-pill neutral" id="confirmKitExtraStatus">Aguardando</strong>
+        </article>
+      </div>
+
+      <div class="tablet-modal-actions">
+        <button type="button" class="secondary-btn" id="confirmCancelBtn">Cancelar</button>
+        <button type="button" id="confirmApproveBtn">Confirmar baixa</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="/node_modules/html5-qrcode/html5-qrcode.min.js"></script>
+  <script src="tablet.js"></script>
+</body>
+</html>
